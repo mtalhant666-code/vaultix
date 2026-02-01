@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt'
 import { createUser, getUserByEmail } from '@/models/users'
 import { signToken } from '@/utils/jwt'
+import { createRootFolder } from '@/models/folders'
 
 const SALT_ROUNDS = 10
 
@@ -21,11 +22,16 @@ export async function signupUser(params: {
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS)
 
-  return createUser({
+  const user = await createUser({
     email,
     passwordHash,
   })
+
+  await createRootFolder(user.id)
+
+  return user
 }
+
 
 export async function loginUser(email: string, password: string) {
   const user = await getUserByEmail(email)

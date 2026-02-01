@@ -1,12 +1,23 @@
-import bcrypt from 'bcryptjs';
+import { NextRequest } from 'next/server'
+import { verifyToken } from '@/utils/jwt'
 
-export async function hashPassword(password: string) {
-  return bcrypt.hash(password, 10);
-}
+export function getUserFromRequest(req: NextRequest) {
+  const authHeader = req.headers.get('authorization')
 
-export async function comparePassword(
-  password: string,
-  hash: string
-) {
-  return bcrypt.compare(password, hash);
+  if (!authHeader) {
+    throw new Error('Authorization header missing')
+  }
+
+  const [type, token] = authHeader.split(' ')
+
+  if (type !== 'Bearer' || !token) {
+    throw new Error('Invalid authorization format')
+  }
+
+  try {
+    const decoded = verifyToken(token)
+    return decoded
+  } catch {
+    throw new Error('Invalid or expired token')
+  }
 }

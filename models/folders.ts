@@ -1,27 +1,20 @@
-import { supabase } from '@/lib/db';
+import { supabase } from '@/lib/db'
 
-export async function createFolder(params: {
-  userId: string;
-  name: string;
-  parentId?: string | null;
-  isRoot?: boolean;
-}) {
-  const { userId, name, parentId = null, isRoot = false } = params;
-
+export async function createRootFolder(userId: string) {
   const { data, error } = await supabase
     .from('folders')
     .insert({
       user_id: userId,
-      name,
-      parent_id: parentId,
-      is_root: isRoot,
+      name: 'root',
+      is_root: true,
+      parent_id: null,
     })
     .select()
-    .single();
+    .single()
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error('Failed to create root folder')
   }
 
-  return data;
+  return data
 }
