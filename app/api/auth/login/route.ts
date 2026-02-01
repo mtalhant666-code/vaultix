@@ -6,15 +6,22 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { email, password } = body
 
-    const user = await loginUser(email, password)
+    const result = await loginUser(email, password)
 
     return NextResponse.json(
-      { success: true, user },
+      {
+        success: true,
+        user: result.user,
+        token: result.token,
+      },
       { status: 200 }
     )
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, message: error.message },
+      {
+        success: false,
+        message: error.message || 'Login failed',
+      },
       { status: 401 }
     )
   }

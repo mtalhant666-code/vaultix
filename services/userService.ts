@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt'
 import { createUser, getUserByEmail } from '@/models/users'
+import { signToken } from '@/utils/jwt'
 
 const SALT_ROUNDS = 10
 
@@ -34,16 +35,22 @@ export async function loginUser(email: string, password: string) {
   }
 
   const isValid = await bcrypt.compare(password, user.password_hash)
-
   if (!isValid) {
     throw new Error('Invalid email or password')
   }
 
-  // NEVER return password_hash
-  return {
-    id: user.id,
+  const token = signToken({
+    userId: user.id,
     email: user.email,
-    is_email_verified: user.is_email_verified,
-    created_at: user.created_at,
+  })
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      is_email_verified: user.is_email_verified,
+      
+    },
+    token,
   }
 }
