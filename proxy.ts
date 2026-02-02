@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/utils/jwt'
 
+const PUBLIC_PATHS = [
+  '/api/auth/login',
+  '/api/auth/signup',
+]
+
 export const proxy = (req: NextRequest) => {
-  // Only protect /api/me
-  if (!req.nextUrl.pathname.startsWith('/api/me')) {
+  const { pathname } = req.nextUrl
+
+  // Allow public routes
+  if (PUBLIC_PATHS.includes(pathname)) {
+    return NextResponse.next()
+  }
+
+  // Only protect API routes
+  if (!pathname.startsWith('/api')) {
     return NextResponse.next()
   }
 
@@ -16,18 +28,15 @@ export const proxy = (req: NextRequest) => {
     )
   }
 
-  const token = authHeader.split(' ')[1]
-
   try {
+    const token = authHeader.split(' ')[1]
     const decoded = verifyToken(token)
 
-    const requestHeaders = new Headers(req.headers)
-    requestHeaders.set('x-user', JSON.stringify(decoded))
+    const headers = new Headers(req.headers)
+    headers.set('x-user', JSON.stringify(decoded))
 
     return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
+      request: { headers },
     })
   } catch {
     return NextResponse.json(
