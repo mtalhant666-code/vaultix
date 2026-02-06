@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt'
-import { createUser, getUserByEmail } from '@/models/users'
-import { signToken } from '@/utils/jwt'
-import { createRootFolder } from '@/models/folders'
+import { createUser, getUserByEmail } from '@/backend/models/users'
+import { signToken } from '@/backend/auth/jwt'
+import { createRootFolder } from '@/backend/models/folders'
 
 const SALT_ROUNDS = 10
 

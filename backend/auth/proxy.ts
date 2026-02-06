@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/utils/jwt'
+import { verifyToken } from '@/backend/auth/jwt'
 
 const PUBLIC_PATHS = [
   '/api/auth/login',
   '/api/auth/signup',
+  '/api/r2-test'
 ]
 
 export const proxy = (req: NextRequest) => {
   const { pathname } = req.nextUrl
 
   // Allow public routes
-  if (PUBLIC_PATHS.includes(pathname)) {
+  if (!PUBLIC_PATHS.includes(pathname)) {
     return NextResponse.next()
   }
 

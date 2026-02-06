@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/db'
+import { supabase } from '@/backend/db/db'
 
 export async function createRootFolder(userId: string) {
   const { data, error } = await supabase

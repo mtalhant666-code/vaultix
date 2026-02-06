@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/db';
+import { supabase } from '@/backend/db/db';
 
 /**
  * Create a new user
