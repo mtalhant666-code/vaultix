@@ -8,8 +8,9 @@ const SALT_ROUNDS = 10
 export async function signupUser(params: {
   email: string
   password: string
+  name?: string
 }) {
-  const { email, password } = params
+  const { email, password, name } = params
 
   if (!email || !password) {
     throw new Error('Email and password are required')
@@ -25,11 +26,24 @@ export async function signupUser(params: {
   const user = await createUser({
     email,
     passwordHash,
+    name,
   })
 
   await createRootFolder(user.id)
 
-  return user
+  const token = signToken({
+    userId: user.id,
+    email: user.email,
+  })
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      is_email_verified: user.is_email_verified,
+    },
+    token,
+  }
 }
 
 

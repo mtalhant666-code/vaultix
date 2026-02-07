@@ -6,14 +6,16 @@ import { supabase } from '@/backend/db/db';
 export async function createUser(params: {
   email: string;
   passwordHash: string;
+  name?: string;
 }) {
-  const { email, passwordHash } = params;
+  const { email, passwordHash, name } = params;
 
   const { data, error } = await supabase
     .from('users')
     .insert({
       email,
       password_hash: passwordHash,
+      name: name || null,
     })
     .select()
     .single();

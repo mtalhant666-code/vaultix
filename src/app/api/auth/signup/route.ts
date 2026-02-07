@@ -4,7 +4,7 @@ import { signupUser } from '@/backend/services/userService';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password } = body;
+    const { email, password, name } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -13,12 +13,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await signupUser({ email, password });
+    const result = await signupUser({ email, password, name });
 
-    // Never return password_hash
-    const { password_hash, ...safeUser } = user;
-
-    return NextResponse.json(safeUser, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        user: result.user,
+        token: result.token,
+      },
+      { status: 201 }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message },
