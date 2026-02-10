@@ -1,58 +1,50 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { PutObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { r2 } from '@/backend/storage/r2'
-import { createFile } from '@/backend/models/files'
+import { NextRequest, NextResponse } from "next/server";
+import { initUploadBatch } from "@/backend/services/fileService";
+import { z } from "zod";
+
+const UploadFileInputSchema = z.object({
+  name: z.string().min(1),
+  size: z.number().positive(),
+  type: z.string().min(1),
+});
+
+const InitUploadBatchSchema = z.object({
+  files: z.array(UploadFileInputSchema).min(1),
+  folder_id: z.string().uuid(),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const user = JSON.parse(req.headers.get('x-user')!)
-    const body = await req.json()
+    // ✅ Read auth info injected by proxy/middleware
+    const userId = req.headers.get("x-user-id");
+    const userEmail = req.headers.get("x-user-email");
 
-    const { file_name, file_type, file_size, folder_id } = body
+    console.log("User ID:", userId, "User Email:", userEmail);
 
-    if (!file_name || !file_type || !file_size) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid input' },
-        { status: 400 }
-      )
+    if (!userId || !userEmail) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // temp key, file id comes after insert
-    const tempKey = 'temp'
+    // ✅ Parse & validate body
+    const body = InitUploadBatchSchema.parse(await req.json());
 
-    const file = await createFile({
-      user_id: user.userId,
-      folder_id,
-      file_name,
-      file_size,
-      file_type,
-      storage_key: tempKey,
-      bucket_name: process.env.R2_BUCKET_NAME!,
-    })
+    const result = await initUploadBatch({
+      userId, // already a string
+      files: body.files,
+      folderId: body.folder_id,
+    });
 
-    const storageKey = `users/u-${user.userId}/files/f-${file.id}`
+    return NextResponse.json(result);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid request body", issues: err.issues },
+        { status: 400 }
+      );
+    }
 
-    // Generate presigned URL
-    const uploadUrl = await getSignedUrl(
-      r2,
-      new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME!,
-        Key: storageKey,
-        ContentType: file_type,
-      }),
-      { expiresIn: 60 * 5 }
-    )
+    const message = err instanceof Error ? err.message : "Internal error";
 
-    return NextResponse.json({
-      success: true,
-      fileId: file.id,
-      uploadUrl,
-    })
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

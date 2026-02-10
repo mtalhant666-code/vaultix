@@ -1,30 +1,41 @@
 import { supabase } from '@/backend/db/db';
-
+import { createRootFolder } from '@/backend/models/folders'
+import type { User } from '../shared/types/user';
 /**
  * Create a new user
  */
 export async function createUser(params: {
-  email: string;
-  passwordHash: string;
-  name?: string;
-}) {
-  const { email, passwordHash, name } = params;
+  email: string
+  passwordHash: string
+  name?: string
+}): Promise<User> {
+  const { email, passwordHash, name } = params
 
-  const { data, error } = await supabase
+  // 1️⃣ Create user
+  const { data: user, error } = await supabase
     .from('users')
     .insert({
       email,
       password_hash: passwordHash,
-      name: name || null,
+      name: name ?? null,
     })
     .select()
-    .single();
+    .single()
 
-  if (error) {
-    throw new Error(error.message);
+  if (error || !user) {
+    throw new Error(error?.message ?? 'Failed to create user')
   }
 
-  return data;
+  // 2️⃣ Create root folder (atomic-at-app-level)
+  try {
+    await createRootFolder(user.id)
+  } catch (err) {
+    // rollback user if root folder fails
+    await supabase.from('users').delete().eq('id', user.id)
+    throw err
+  }
+
+  return user
 }
 
 /**
